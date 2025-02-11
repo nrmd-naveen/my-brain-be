@@ -23,7 +23,8 @@ type User = z.infer<typeof zodUserSchema>
     
 AuthRouter.post('/signup', async (req: Request, res: Response): Promise<any> => {
     try {
-        const userData : User = zodUserSchema.parse(req.body.data)
+        console.log(req.body)
+        const userData : User = zodUserSchema.parse(req.body)
         const passwordHash = await bcrypt.hash(userData.password, 10);
         
         const existingUser = await prisma.user.findUnique({
@@ -74,7 +75,7 @@ AuthRouter.post('/signup', async (req: Request, res: Response): Promise<any> => 
 AuthRouter.post('/signin', async(req: Request, res: Response) : Promise<any> => {
     
     try {
-        const userData : User = zodUserSchema.parse(req.body.data)
+        const userData : User = zodUserSchema.parse(req.body)
         
         const existingUser = await prisma.user.findUnique({
             where: {

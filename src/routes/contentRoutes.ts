@@ -104,7 +104,7 @@ ContentRouter.post('/create', async (
     req: Request,
     res: Response
 ): Promise<any> => {
-    const contentData: Content = req.body.data; //need to validate with zod
+    const contentData: Content = req.body; //need to validate with zod
 
     const { url, isValid } = validateURL(contentData.link);
     if (!isValid) {
@@ -112,7 +112,7 @@ ContentRouter.post('/create', async (
           message: "Invalid Content Link "
         })
     }
-
+    
     const contentType: ContentType = getContentType(url)
     let thumbnailURL;
     try {
@@ -176,6 +176,7 @@ ContentRouter.post('/create', async (
         })
 
     } catch (error) {
+        console.log(error)
         res.status(500).json({
             message: "Internal server error"
         })
@@ -187,7 +188,7 @@ ContentRouter.post('/delete', async(
     req: Request,
     res: Response
 ): Promise<any> => {
-    const { contentId } = req.body.data;
+    const { contentId } = req.body;
     if (!contentId || typeof contentId !== "number") {
         return res.status(401).json({
             message: "Improper Content Id to Delete"
@@ -222,7 +223,7 @@ ContentRouter.post('/share', async(
     req: Request,
     res: Response
 ) => {
-    const { shareable }  = req.body.data;
+    const { shareable }  = req.body;
     try {
         let hash;
         const existingBrain = await prisma.brainLink.findUnique({
