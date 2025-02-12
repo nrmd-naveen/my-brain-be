@@ -112,14 +112,16 @@ ContentRouter.post('/create', async (
           message: "Invalid Content Link "
         })
     }
-    
-    const contentType: ContentType = getContentType(url)
-    let thumbnailURL;
-    try {
 
+    const contentType: ContentType = getContentType(url)
+    try {
+        let thumbnailURL;
+        let pageTitle = contentData.title;
         if (contentType === ContentType.Others) {
             const screenshotKey = `user_${req.userId}/thumbnails/${contentData.title}.png`;
-            thumbnailURL = await getScreenshot(url, screenshotKey.replace(' ', '_'));
+            const { s3URL, title } = await getScreenshot(url, screenshotKey.replace(' ', '_'));
+            thumbnailURL = s3URL;
+            pageTitle = title;
         }
 
         // USED "skipDuplicates" INSTEAD OF CHECKING EXISTING ONES
@@ -152,12 +154,12 @@ ContentRouter.post('/create', async (
 
         const createdContent = await prisma.content.create({
             data: {
-                title: contentData.title,
+                title: contentData.title ? contentData.title : pageTitle,
                 description: contentData.description,
                 link: url,
                 type: contentType,
                 userId: req.userId,
-                thumbnail: thumbnailURL,
+                thumbnail: thumbnailURL?  thumbnailURL : null,
                 tags: {
                     connectOrCreate: contentData.tags?.map(tag => ({
                         where: { name: tag.toLowerCase() },

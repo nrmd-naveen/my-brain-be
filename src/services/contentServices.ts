@@ -13,6 +13,49 @@ const s3 = new S3Client({
 })
 
 
+// export const getScreenshot = async (
+//     url: string,
+//     screenshotKey: string
+// ) => {
+//   try {
+//     // Launch Puppeteer
+//     const browser = await puppeteer.launch();
+//       const page = await browser.newPage();
+//       await page.setViewport({
+//         width: 1280,
+//         height: 720
+//     });
+//     await page.goto(url);
+//     // await page.goto(url,{ timeout: 60000 });
+
+//     // Takes a screenshot of the page
+//     const screenshotBuffer = await page.screenshot();
+
+//     // Uploads to S3
+//     const params = {
+//       Bucket: "my-brain-store",
+//       Key: screenshotKey, // Unique filename with path
+//       Body: screenshotBuffer,
+//       ContentType: 'image/png',
+//     };
+
+//     const command = new PutObjectCommand(params);
+//     const uploadResponse = await s3.send(command);
+
+//     console.log('Screenshot uploaded successfully:', uploadResponse);
+
+//     // Close Puppeteer
+//     await browser.close();
+//     const s3URL = `https://${params.Bucket}.s3.${REGION}.amazonaws.com/${screenshotKey}`
+//     return s3URL; // Returns the S3 URL
+
+//   } catch (error) {
+//     console.error('Error uploading screenshot to S3:', error);
+//     throw error;
+//   }
+// };
+
+
 export const getScreenshot = async (
     url: string,
     screenshotKey: string
@@ -20,18 +63,30 @@ export const getScreenshot = async (
   try {
     // Launch Puppeteer
     const browser = await puppeteer.launch();
-      const page = await browser.newPage();
-      await page.setViewport({
-        width: 1280, 
-        height: 720
-    });
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 720 });
     await page.goto(url);
-    // await page.goto(url,{ timeout: 60000 });
 
-    // Takes a screenshot of the page
+    // Wait for the popup close button to appear (if present)
+    await page.waitForSelector('[aria-label="Dismiss"]', { visible: true, timeout: 5000 })
+      .then(async () => {
+        // Once the button is visible, click it
+        const closeButton = await page.$('[aria-label="Dismiss"]');
+        if (closeButton) {
+          await closeButton.click();
+        }
+      })
+      .catch(() => {
+        console.log('Dismiss button not found or not visible');
+      });
+
+    // Get the page title
+    const title = await page.title();
+
+    // Take a screenshot
     const screenshotBuffer = await page.screenshot();
 
-    // Uploads to S3
+    // Upload to S3
     const params = {
       Bucket: "my-brain-store",
       Key: screenshotKey, // Unique filename with path
@@ -46,8 +101,12 @@ export const getScreenshot = async (
 
     // Close Puppeteer
     await browser.close();
-    const s3URL = `https://${params.Bucket}.s3.${REGION}.amazonaws.com/${screenshotKey}`
-    return s3URL; // Returns the S3 URL
+
+    // Generate the S3 URL
+    const s3URL = `https://${params.Bucket}.s3.${REGION}.amazonaws.com/${screenshotKey}`;
+
+    // Return the S3 URL and the page title
+    return { s3URL, title };
 
   } catch (error) {
     console.error('Error uploading screenshot to S3:', error);
@@ -63,12 +122,12 @@ export const getContentType = (link: string): ContentType => {
     return ContentType.Youtube;
   } else if (link.includes("twitter.com") || link.includes("x.com")) {
     return ContentType.Twitter;
-  } else if (link.includes("facebook.com")) {
-    return ContentType.Facebook;
+  // } else if (link.includes("facebook.com")) {
+  //   return ContentType.Facebook;
   } else if (link.includes("instagram.com")) {
     return ContentType.Instagram;
-  } else if (link.includes("linkedin.com")) {
-    return ContentType.LinkedIn
+  // } else if (link.includes("linkedin.com")) {
+  //   return ContentType.LinkedIn
   }
   return ContentType.Others
 }
