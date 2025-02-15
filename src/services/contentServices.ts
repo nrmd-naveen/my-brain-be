@@ -114,6 +114,29 @@ export const getScreenshot = async (
   }
 };
 
+export const getPageTitle = async (
+    url: string
+) => {
+  try {
+    // Launch Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(url); 
+
+    // Get the page title
+    const title = await page.title();
+
+    // Close Puppeteer
+    await browser.close();
+
+    return title ;
+
+  } catch (error) {
+    console.error('Error in getting page title:', error);
+    throw error;
+  }
+};
+
 
 export const getContentType = (link: string): ContentType => {
   //https://stackoverflow.com/questions/

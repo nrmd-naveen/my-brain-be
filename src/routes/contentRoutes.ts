@@ -1,8 +1,9 @@
 import { Request, Response, Router } from "express";
-import { getContentType, getScreenshot, validateURL } from "../services/contentServices";
+import { getContentType, getPageTitle, getScreenshot, validateURL } from "../services/contentServices";
 import { prisma } from "../config/db";
 import { ContentType } from "@prisma/client";
 import { z } from "zod";
+import { randomUUID } from "crypto";
 const ContentRouter = Router();
 
 type Content = {
@@ -118,10 +119,12 @@ ContentRouter.post('/create', async (
         let thumbnailURL;
         let pageTitle = contentData.title;
         if (contentType === ContentType.Others) {
-            const screenshotKey = `user_${req.userId}/thumbnails/${contentData.title}.png`;
+            const screenshotKey = `user_${req.userId}/thumbnails/${randomUUID()}.png`;
             const { s3URL, title } = await getScreenshot(url, screenshotKey.replace(' ', '_'));
             thumbnailURL = s3URL;
             pageTitle = title;
+        } else if (!pageTitle || !pageTitle?.length) {
+            pageTitle = await getPageTitle(url);
         }
 
         // USED "skipDuplicates" INSTEAD OF CHECKING EXISTING ONES
@@ -151,7 +154,20 @@ ContentRouter.post('/create', async (
         //     data: contentData.tags.map(tag => ({ name: tag })),
         //     skipDuplicates: true
         // })
-
+        console.log({
+                title: contentData.title.length ? contentData.title : pageTitle,
+                description: contentData.description,
+                link: url,
+                type: contentType,
+                userId: req.userId,
+                thumbnail: thumbnailURL?  thumbnailURL : null,
+                tags: {
+                    connectOrCreate: contentData.tags?.map(tag => ({
+                        where: { name: tag.toLowerCase() },
+                        create: { name: tag.toLowerCase() }
+                    }))
+                }
+            })
         const createdContent = await prisma.content.create({
             data: {
                 title: contentData.title ? contentData.title : pageTitle,

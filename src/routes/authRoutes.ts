@@ -121,4 +121,37 @@ AuthRouter.post('/signin', async(req: Request, res: Response) : Promise<any> => 
 
 })
 
+
+AuthRouter.get('/verify', async(req: Request, res: Response) : Promise<any> => {
+    
+    try {
+        const token: string = req.headers.authorization || "";
+        if (!token) return res.status(401).json({
+            message: "No token provided"
+        })
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: number };
+        
+        const existingUser = await prisma.user.findUnique({
+            where: {
+                id: decodedToken.userId
+            }
+        })
+        if (!existingUser) return res.status(401).json({
+            message: "Invalid token"
+        })
+        
+        return res.status(201).json({
+            message: "Token Verified successfully",
+            token: token
+        })
+        
+    } catch (error) {
+        console.error("Error during token verification:", error);
+        return res.status(500).json({
+            message: "An unexpected error occurred",
+        });
+    }
+
+})
+
 export default AuthRouter;
