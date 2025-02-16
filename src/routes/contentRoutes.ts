@@ -120,13 +120,14 @@ ContentRouter.post('/create', async (
         let pageTitle = contentData.title;
         if (contentType === ContentType.Others) {
             const screenshotKey = `user_${req.userId}/thumbnails/${randomUUID()}.png`;
-            const { s3URL, title } = await getScreenshot(url, screenshotKey.replace(' ', '_'));
+            const s3URL = await getScreenshot(url, screenshotKey.replace(' ', '_'));
             thumbnailURL = s3URL;
-            pageTitle = title;
-        } else if (!pageTitle || !pageTitle?.length) {
+            pageTitle = pageTitle ? pageTitle : await getPageTitle(url);
+        } 
+        if (!pageTitle || !pageTitle?.length) {
             pageTitle = await getPageTitle(url);
         }
-
+        
         // USED "skipDuplicates" INSTEAD OF CHECKING EXISTING ONES
 
         // const existingTags = await prisma.tag.findMany({
@@ -154,6 +155,7 @@ ContentRouter.post('/create', async (
         //     data: contentData.tags.map(tag => ({ name: tag })),
         //     skipDuplicates: true
         // })
+
         console.log({
                 title: contentData.title.length ? contentData.title : pageTitle,
                 description: contentData.description,
