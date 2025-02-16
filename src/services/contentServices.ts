@@ -1,7 +1,5 @@
 import { ContentType, PrismaClient } from "@prisma/client";
-import puppeteer from "puppeteer";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import ts from "typescript";
 const cheerio = require('cheerio');
 
 const REGION = process.env.S3_REGION || "";
