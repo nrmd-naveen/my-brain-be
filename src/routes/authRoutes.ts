@@ -75,8 +75,10 @@ AuthRouter.post('/signup', async (req: Request, res: Response): Promise<any> => 
 AuthRouter.post('/signin', async(req: Request, res: Response) : Promise<any> => {
     
     try {
-        const userData : User = zodUserSchema.parse(req.body)
-        
+        const userData: User = {
+            username: req.body.username,
+            password: req.body.password
+        }
         const existingUser = await prisma.user.findUnique({
             where: {
                 username: userData.username
@@ -92,9 +94,7 @@ AuthRouter.post('/signin', async(req: Request, res: Response) : Promise<any> => 
             message: "Invalid username or password",
         })
         
-        const token = jwt.sign({ userId: existingUser.id }, process.env.JWT_SECRET as string, {
-            expiresIn: "1h" // need to change expiry time later
-        })
+        const token = jwt.sign({ userId: existingUser.id }, process.env.JWT_SECRET as string)
         return res.status(201).json({
             message: "User signed in successfully",
             token: token
@@ -142,6 +142,7 @@ AuthRouter.get('/verify', async(req: Request, res: Response) : Promise<any> => {
         
         return res.status(201).json({
             message: "Token Verified successfully",
+            valid: true,
             token: token
         })
         
@@ -149,6 +150,7 @@ AuthRouter.get('/verify', async(req: Request, res: Response) : Promise<any> => {
         console.error("Error during token verification:", error);
         return res.status(500).json({
             message: "An unexpected error occurred",
+            valid: false
         });
     }
 
