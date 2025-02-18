@@ -6,7 +6,11 @@ import ContentRouter from "./routes/contentRoutes";
 const app = express();
 
 app.use(cors({
-    origin: ["*"],
+    // origin: ["*"],
+    // This allows all origins
+    origin: function (origin, callback) {
+        callback(null, true); 
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }))
